@@ -1,3 +1,8 @@
 - posts.each do |post|
     div
         p #{post["content"]}
+        p #{post}
+        - if session[:user_id]
+            form action="/like_post/#{post["id"]}" method="post"
+                input type="submit" value="Like!"
+        p #{post["likes"]}

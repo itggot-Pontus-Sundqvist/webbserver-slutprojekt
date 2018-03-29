@@ -8,10 +8,21 @@ class App < Sinatra::Base
 		return error
 	end
 
+	def get_likes(posts)
+		db = SQLite3::Database::new("./db/database.db")
+		db.results_as_hash = true
+		posts.each do |post|
+			likes = db.execute("SELECT * FROM users WHERE id IN (SELECT user_id FROM user_likes_post WHERE post_id=?)", post["id"])
+			post["likes"] = likes
+		end
+		return posts
+	end
+
 	get '/page/:user' do
 		db = SQLite3::Database::new("./db/database.db")
 		db.results_as_hash = true
-		posts = db.execute("SELECT content FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC LIMIT 10", params[:user])
+		posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC LIMIT 10", params[:user])
+		posts = get_likes(posts)
 		slim(:user_feed, locals: {posts: posts})
 	end
 	
@@ -74,6 +85,17 @@ class App < Sinatra::Base
 			session[:failure] = "Passwords didn't match. Please try again."
 			redirect('/new_user')
 		end
+	end
+
+	post '/like_post/:post_id' do
+		user_id = session[:user_id]
+		post_id = params[:post_id]
+		db = SQLite3::Database::new("./db/database.db")
+		existing = db.execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
+		if existing.empty?
+			db.execute("INSERT INTO user_likes_post (user_id, post_id) VALUES (?, ?)", [user_id, post_id])
+		end
+		redirect back
 	end
 
 end
