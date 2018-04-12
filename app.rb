@@ -36,6 +36,25 @@ class App < Sinatra::Base
 		end
 	end
 
+	get '/logout' do
+		session[:user_id] = nil
+		redirect('/')
+	end
+	
+	get '/liked' do
+		if session[:user_id]
+			db = SQLite3::Database::new("./db/database.db")
+			db.results_as_hash = true
+			posts = db.execute("SELECT * FROM posts WHERE id IN (SELECT post_id FROM user_likes_post WHERE user_id=?)", session[:user_id])
+			posts.each do |post| 
+				post["author"] = get_name_of_user(post["author_id"])
+			end
+			slim(:liked_list, locals:{posts:posts})
+		else
+			redirect("/")
+		end
+	end
+
 	get '/page/:user' do
 		db = SQLite3::Database::new("./db/database.db")
 		db.results_as_hash = true

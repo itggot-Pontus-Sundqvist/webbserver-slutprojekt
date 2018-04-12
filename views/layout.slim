@@ -7,4 +7,9 @@ html lang="en"
         link rel="stylesheet" href="/css/main.css"/
         title Min Sida%#&")"(##)
     body
-        == yield
+        nav
+            a href="/" Home
+            - if session[:user_id]
+                a href="/logout"      Logout
+        main
+            == yield
