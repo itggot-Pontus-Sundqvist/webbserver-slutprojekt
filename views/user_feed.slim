@@ -1,8 +1,19 @@
+- if session[:user_id]
+    - if following(session[:user_id], user_id)
+        form action="/unfollow_user/#{user_id}" method="post"
+            input type="submit" value="Unfollow_user"        
+    - else
+        form action="/follow_user/#{user_id}" method="post"
+            input type="submit" value="Follow_user"
 - posts.each do |post|
-    div
+    div.post_box id="#{post["id"]}"
         p #{post["content"]}
-        p #{post}
         - if session[:user_id]
-            form action="/like_post/#{post["id"]}" method="post"
-                input type="submit" value="Like!"
-        p #{post["likes"]}
+            - if liked(session[:user_id], post["id"])
+                form action="/unlike_post/#{post["id"]}" method="post"
+                    input type="submit" value="Unlike!"
+            - else
+                form action="/like_post/#{post["id"]}" method="post"
+                    input type="submit" value="Like!"
+        div.like_box
+            p #{post["likes"].map{|x|x["name"]}.join(", ")}
