@@ -1,3 +1,18 @@
 - posts.each do |post|
-    div.liking_box
-        a href="/page/#{post["author"]}##{post["id"]}" #{post["content"]}
+    .post_box id="#{post["id"]}"
+        .post_top
+            .post_content_box
+                p #{post["content"]}
+            .post_author
+                p #{get_name_of_user(post["author_id"])}
+        .post_bottom
+            .like_box
+                - if !post["likes"].empty?
+                    .like_text
+                        p Liked by:
+                    .like_list
+                        - post["likes"].each do |x|
+                            a.like_users href="/page/#{x["name"]}" #{x["name"]}
+            - if session[:user_id]
+                    form action="/unlike_liked_post/#{post["id"]}" method="post"
+                        input type="submit" value="Unlike!"

@@ -8,8 +8,14 @@ html lang="en"
         title Min Sida%#&")"(##)
     body
         nav
-            a href="/" Home
-            - if session[:user_id]
-                a href="/logout"      Logout
+            .nav_left_side
+                a.nav_link href="/" Home
+                - if session[:user_id]
+                    a.nav_link href="/logout" Logout
+            .nav_right_side
+                - if session[:user_id]
+                    a.nav_link href="/page/#{session[:user_id]}" Min sida
+                    a.nav_link href="/following" Följer
+                    a.nav_link href="/liked" Gillade inlägg        
         main
             == yield

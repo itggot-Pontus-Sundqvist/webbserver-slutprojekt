@@ -46,6 +46,7 @@ class App < Sinatra::Base
 			db = SQLite3::Database::new("./db/database.db")
 			db.results_as_hash = true
 			posts = db.execute("SELECT * FROM posts WHERE id IN (SELECT post_id FROM user_likes_post WHERE user_id=?)", session[:user_id])
+			posts = get_likes(posts)
 			posts.each do |post| 
 				post["author"] = get_name_of_user(post["author_id"])
 			end
@@ -58,7 +59,7 @@ class App < Sinatra::Base
 	get '/page/:user' do
 		db = SQLite3::Database::new("./db/database.db")
 		db.results_as_hash = true
-		posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC LIMIT 10", params[:user])
+		posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
 		posts = get_likes(posts)
 		if !posts.empty?
 			slim(:user_feed, locals: {posts: posts, user_id: posts[0]["author_id"]})
