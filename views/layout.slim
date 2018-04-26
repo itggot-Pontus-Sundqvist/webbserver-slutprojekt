@@ -10,6 +10,7 @@ html lang="en"
         nav
             .nav_left_side
                 a.nav_link href="/" Home
+                a.nav_link href="/all_users" All Users
                 - if session[:user_id]
                     a.nav_link href="/logout" Logout
             .nav_right_side

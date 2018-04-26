@@ -36,10 +36,15 @@ class App < Sinatra::Base
 	get '/following' do
 		if session[:user_id]
 			users = get_following(session[:user_id])
-			slim(:follow_list, locals:{users:users})
+			slim(:users_list, locals:{users:users})
 		else
 			redirect("/")
 		end
+	end
+
+	get '/all_users' do
+		users = db().execute("SELECT name FROM users")
+		slim(:users_list, locals: {users: users})
 	end
 
 	get '/logout' do
@@ -61,10 +66,12 @@ class App < Sinatra::Base
 	end
 
 	get '/page/:user' do
-		posts = db().execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
-		posts = get_likes(posts)
-		if !posts.empty?
-			slim(:user_feed, locals: {posts: posts, user_id: posts[0]["author_id"]})
+		db = db()
+		user = db.execute("SELECT * FROM users WHERE name=?", params[:user])
+		if !user.empty?
+			posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
+			posts = get_likes(posts)
+			slim(:user_feed, locals: {posts: posts, user_id: user[0]["id"]})
 		else
 			"User not found"
 		end
