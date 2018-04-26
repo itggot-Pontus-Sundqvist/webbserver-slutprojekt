@@ -8,7 +8,8 @@ form action="/new_post" method="post"
             .post_content_box
                 p #{post["content"]}
             .post_author
-                p #{get_name_of_user(post["author_id"])}
+                - name = get_name_of_user(post["author_id"])
+                a href="/page/#{name}" #{name}
         .post_bottom
             .like_box
                 - if !post["likes"].empty?
