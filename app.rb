@@ -2,6 +2,12 @@ class App < Sinatra::Base
 
 	enable:sessions
 
+	def db()
+		db = SQLite3::Database::new("./db/database.db")
+		db.results_as_hash = true
+		return db
+	end
+
 	def failure
 		error = session[:failure]
 		session[:failure] = nil
@@ -9,8 +15,7 @@ class App < Sinatra::Base
 	end
 
 	def get_likes(posts)
-		db = SQLite3::Database::new("./db/database.db")
-		db.results_as_hash = true
+		db = db()
 		posts.each do |post|
 			likes = db.execute("SELECT * FROM users WHERE id IN (SELECT user_id FROM user_likes_post WHERE post_id=?)", post["id"])
 			post["likes"] = likes
@@ -19,17 +24,18 @@ class App < Sinatra::Base
 	end
 
 	def get_name_of_user(user_id)
-		db = SQLite3::Database::new("./db/database.db")
-		db.results_as_hash = true
-		name = db.execute("SELECT name FROM users WHERE id=?", user_id)[0]["name"]
+		name = db().execute("SELECT name FROM users WHERE id=?", user_id)[0]["name"]
 		return name
+	end
+
+	def get_following(user_id)
+		users = db().execute("SELECT * FROM users WHERE id IN (SELECT followed_id FROM user_follows_user WHERE following_id=?)", user_id)
+		return users
 	end
 
 	get '/following' do
 		if session[:user_id]
-			db = SQLite3::Database::new("./db/database.db")
-			db.results_as_hash = true
-			users = db.execute("SELECT * FROM users WHERE id IN (SELECT followed_id FROM user_follows_user WHERE following_id=?)", session[:user_id])
+			users = get_following(session[:user_id])
 			slim(:follow_list, locals:{users:users})
 		else
 			redirect("/")
@@ -43,9 +49,7 @@ class App < Sinatra::Base
 	
 	get '/liked' do
 		if session[:user_id]
-			db = SQLite3::Database::new("./db/database.db")
-			db.results_as_hash = true
-			posts = db.execute("SELECT * FROM posts WHERE id IN (SELECT post_id FROM user_likes_post WHERE user_id=?)", session[:user_id])
+			posts = db().execute("SELECT * FROM posts WHERE id IN (SELECT post_id FROM user_likes_post WHERE user_id=?)", session[:user_id])
 			posts = get_likes(posts)
 			posts.each do |post| 
 				post["author"] = get_name_of_user(post["author_id"])
@@ -57,9 +61,7 @@ class App < Sinatra::Base
 	end
 
 	get '/page/:user' do
-		db = SQLite3::Database::new("./db/database.db")
-		db.results_as_hash = true
-		posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
+		posts = db().execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
 		posts = get_likes(posts)
 		if !posts.empty?
 			slim(:user_feed, locals: {posts: posts, user_id: posts[0]["author_id"]})
@@ -68,9 +70,18 @@ class App < Sinatra::Base
 		end
 	end
 	
+	def get_posts_of_following(user_id)
+		posts = db().execute("SELECT * from posts WHERE author_id IN (
+			SELECT followed_id FROM user_follows_user WHERE following_id=?
+		) ORDER BY created DESC", user_id)
+		posts = get_likes(posts)
+		return posts
+	end
+
 	get '/' do
 		if session[:user_id]
-			slim(:home_page, locals: {name: get_name_of_user(session[:user_id])})
+			posts = get_posts_of_following(session[:user_id])
+			slim(:home_page, locals: {posts: posts})
 		else
 			redirect('/login')
 		end
@@ -78,8 +89,7 @@ class App < Sinatra::Base
 	
 	post '/new_post' do
 		if session[:user_id]
-			db = SQLite3::Database::new("./db/database.db")
-			db.execute("INSERT INTO posts (content, created, author_id) VALUES (?, ?, ?)", [params[:text], Time.now.to_i, session[:user_id]])
+			db().execute("INSERT INTO posts (content, created, author_id) VALUES (?, ?, ?)", [params[:text], Time.now.to_i, session[:user_id]])
 			redirect('/')
 		else
 			redirect('/login')
@@ -93,7 +103,7 @@ class App < Sinatra::Base
 	post '/login' do
 		name = params[:name]
 		password = params[:password]
-		db = SQLite3::Database::new("./db/database.db")
+		db = db()
 		real_password = db.execute("SELECT password FROM users WHERE name=?", name)
 		if real_password != [] && BCrypt::Password.new(real_password[0][0]) == password
 			session[:user_id] = db.execute("SELECT id FROM users WHERE name=?", name)[0][0]
@@ -113,7 +123,7 @@ class App < Sinatra::Base
 		new_password = params[:password]
 		confirmed_password = params[:confirmed_password]
 		if new_password == confirmed_password
-			db = SQLite3::Database::new("./db/database.db")	
+			db = db()
 			taken_name = db.execute("SELECT * FROM users WHERE name IS ?", new_name)
 			if taken_name == []
 				hashed_password = BCrypt::Password.create(new_password)
@@ -130,43 +140,51 @@ class App < Sinatra::Base
 	end
 
 	def liked(user_id, post_id)
-		db = SQLite3::Database::new("./db/database.db")
-		existing = db.execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
+		existing = db().execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
 		!existing.empty?
 	end
 
 	def following(following, followed)
-		db = SQLite3::Database::new("./db/database.db")
-		existing = db.execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following, followed])
+		existing = db().execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following, followed])
 		!existing.empty?
 	end
 
-	post '/like_post/:post_id' do
+	post '/like_post/:post_id/:place' do
 		liking_user_id = session[:user_id]
 		post_id = params[:post_id]
-		db = SQLite3::Database::new("./db/database.db")
+		db = db()
 		post_author = db.execute("SELECT name FROM users WHERE id IN (SELECT author_id FROM posts WHERE id=?)", post_id)[0][0]
 		if !liked(liking_user_id, post_id)
 			db.execute("INSERT INTO user_likes_post (user_id, post_id) VALUES (?, ?)", [liking_user_id, post_id])
 		end
+		if params[:place] == "home"
+			redirect "/##{post_id}"
+		else
 		redirect "page/#{post_author}##{post_id}"
 	end
+	end
 
-	post '/unlike_post/:post_id' do
+	post '/unlike_post/:post_id/:place' do
 		liking_user_id = session[:user_id]
 		post_id = params[:post_id]
-		db = SQLite3::Database::new("./db/database.db")
+		db = db()
 		post_author = db.execute("SELECT name FROM users WHERE id IN (SELECT author_id FROM posts WHERE id=?)", post_id)[0][0]
 		if liked(liking_user_id, post_id)
 			db.execute("DELETE FROM user_likes_post WHERE user_id=? AND post_id=?", [liking_user_id, post_id])
 		end
-		redirect "page/#{post_author}##{post_id}"
+		if params[:place] == "home"
+			redirect "/##{post_id}"
+		elsif params[:place] == "liked"
+			redirect "/liked"
+		else
+			redirect "/page/#{post_author}##{post_id}"
+		end
 	end
 
 	post '/follow_user/:user_id' do
 		following_id = session[:user_id]
 		followed_id = params[:user_id]
-		db = SQLite3::Database::new("./db/database.db")
+		db = db()
 		existing = db.execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])
 		if existing.empty?
 			db.execute("INSERT INTO user_follows_user (following_id, followed_id) VALUES (?, ?)", [following_id, followed_id])
@@ -177,7 +195,7 @@ class App < Sinatra::Base
 	post '/unfollow_user/:user_id' do
 		following_id = session[:user_id]
 		followed_id = params[:user_id]
-		db = SQLite3::Database::new("./db/database.db")
+		db = db()
 		existing = db.execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])
 		if !existing.empty?
 			db.execute("DELETE FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])

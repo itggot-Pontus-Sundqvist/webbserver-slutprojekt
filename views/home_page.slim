@@ -2,8 +2,25 @@ form action="/new_post" method="post"
     input type="text" name="text" placeholder="Write a new post here!"
     input type="submit" value="Post"
 
-a href="/page/#{name}" Min sida
-br
-a href="/following" Följer
-br
-a href="/liked" Gillade inlägg
+- posts.each do |post|
+    .post_box id="#{post["id"]}"
+        .post_top
+            .post_content_box
+                p #{post["content"]}
+            .post_author
+                p #{get_name_of_user(post["author_id"])}
+        .post_bottom
+            .like_box
+                - if !post["likes"].empty?
+                    .like_text
+                        p Liked by:
+                    .like_list
+                        - post["likes"].each do |x|
+                            a.like_users href="/page/#{x["name"]}" #{x["name"]}
+            - if liked(session[:user_id], post["id"])
+                form action="/unlike_post/#{post["id"]}/home" method="post"
+                    input type="submit" value="Unlike!"
+            - else
+                form action="/like_post/#{post["id"]}/home" method="post"
+                    input type="submit" value="Like!"
+            

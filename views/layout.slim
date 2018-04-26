@@ -14,7 +14,7 @@ html lang="en"
                     a.nav_link href="/logout" Logout
             .nav_right_side
                 - if session[:user_id]
-                    a.nav_link href="/page/#{session[:user_id]}" Min sida
+                    a.nav_link href="/page/#{get_name_of_user(session[:user_id])}" Min sida
                     a.nav_link href="/following" Följer
                     a.nav_link href="/liked" Gillade inlägg        
         main
