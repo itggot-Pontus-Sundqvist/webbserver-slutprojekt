@@ -72,3 +72,11 @@ main {
     margin-right: 5px;
     text-decoration: none;
 }
+
+.buttons {
+    display: flex;
+}
+
+#delete-button {
+    margin-right: 5px;
+}

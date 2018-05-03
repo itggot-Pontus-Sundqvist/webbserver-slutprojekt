@@ -167,8 +167,23 @@ class App < Sinatra::Base
 		if params[:place] == "home"
 			redirect "/##{post_id}"
 		else
-		redirect "page/#{post_author}##{post_id}"
+			redirect "page/#{post_author}##{post_id}"
+		end
 	end
+
+	post '/delete_post/:post_id/:place' do
+		post_id = params[:post_id]
+		db = db()
+		author = db.execute("SELECT author_id FROM posts WHERE id=?", post_id)
+		if !author.empty? && session[:user_id] == author[0]['author_id']
+			db.execute("DELETE FROM posts WHERE id=?", post_id)
+			p "DELETED"
+		end
+		if params[:place] == "home"
+			redirect "/##{post_id}"
+		else
+			redirect "page/#{get_name_of_user(author)}##{post_id}"
+		end
 	end
 
 	post '/unlike_post/:post_id/:place' do
