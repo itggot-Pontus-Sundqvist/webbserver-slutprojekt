@@ -23,7 +23,7 @@
                             a.like_users href="/page/#{x["name"]}" #{x["name"]}
             .buttons
                 -if session[:user_id] == post["author_id"]
-                    form id="delete-button"action="/delete_post/#{post["id"]}/user" method="post"
+                    form id="delete-button"action="/delete_post/#{post["id"]}/#{name}" method="post"
                             input type="submit" value="Delete"
                 - if session[:user_id]
                     - if liked(session[:user_id], post["id"])

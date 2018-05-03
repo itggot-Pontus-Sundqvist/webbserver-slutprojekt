@@ -33,6 +33,16 @@ class App < Sinatra::Base
 		return users
 	end
 
+	def liked(user_id, post_id)
+		existing = db().execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
+		!existing.empty?
+	end
+
+	def following(following, followed)
+		existing = db().execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following, followed])
+		!existing.empty?
+	end
+
 	get '/following' do
 		if session[:user_id]
 			users = get_following(session[:user_id])
@@ -71,7 +81,7 @@ class App < Sinatra::Base
 		if !user.empty?
 			posts = db.execute("SELECT * FROM posts WHERE author_id IN (SELECT id FROM users WHERE name=?) ORDER BY created DESC", params[:user])
 			posts = get_likes(posts)
-			slim(:user_feed, locals: {posts: posts, user_id: user[0]["id"]})
+			slim(:user_feed, locals: {posts: posts, user_id: user[0]["id"], name: user[0]["name"]})
 		else
 			"User not found"
 		end
@@ -146,16 +156,6 @@ class App < Sinatra::Base
 		end
 	end
 
-	def liked(user_id, post_id)
-		existing = db().execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
-		!existing.empty?
-	end
-
-	def following(following, followed)
-		existing = db().execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following, followed])
-		!existing.empty?
-	end
-
 	post '/like_post/:post_id/:place' do
 		liking_user_id = session[:user_id]
 		post_id = params[:post_id]
@@ -171,7 +171,7 @@ class App < Sinatra::Base
 		end
 	end
 
-	post '/delete_post/:post_id/:place' do
+	post '/delete_post/:post_id/:name' do
 		post_id = params[:post_id]
 		db = db()
 		author = db.execute("SELECT author_id FROM posts WHERE id=?", post_id)
@@ -179,11 +179,7 @@ class App < Sinatra::Base
 			db.execute("DELETE FROM posts WHERE id=?", post_id)
 			p "DELETED"
 		end
-		if params[:place] == "home"
-			redirect "/##{post_id}"
-		else
-			redirect "page/#{get_name_of_user(author)}##{post_id}"
-		end
+		redirect "page/#{params[:name]}##{post_id}"
 	end
 
 	post '/unlike_post/:post_id/:place' do
