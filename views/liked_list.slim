@@ -13,9 +13,7 @@
                     .like_list
                         - post["likes"].each do |x|
                             a.like_users href="/page/#{x["name"]}" #{x["name"]}
+                            
             - if session[:user_id]
                     form action="/unlike_post/#{post["id"]}/liked" method="post"
                         input type="submit" value="Unlike!"
-            -if session[:user_id] == post["author_id"]
-                form action="/delete_post/#{post["id"]}/liked" method="post"
-                        input type="submit" value="Delete"

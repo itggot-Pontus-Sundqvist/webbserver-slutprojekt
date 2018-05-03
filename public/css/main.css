@@ -19,7 +19,14 @@ nav {
     margin-bottom: 20px;
 }
 
-a {text-decoration: none;}
+a {
+    text-decoration: none;
+    color: black;
+}
+
+.white {
+    color: white;
+}
 
 .nav_left_side .nav_link {
     margin-right: 10px;
@@ -79,4 +86,25 @@ main {
 
 #delete-button {
     margin-right: 5px;
+}
+
+.following-box {
+    padding: 5px;
+    background-color: white;
+}
+
+.login-box {
+    background-color: white;
+    padding: 5px;
+}
+
+.form-box {
+    display: flex;
+    flex-direction: column;
+    height: 200px;
+}
+
+.error {
+    background: blue;
+    color: white;
 }

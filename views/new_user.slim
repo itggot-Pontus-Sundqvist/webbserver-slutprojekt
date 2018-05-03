@@ -1,9 +1,11 @@
-form action="/new_user" method="post"
-    input type="text" name="name" placeholder="Username"
-    input type="password" name="password" placeholder="Password"
-    input type="password" name="confirmed_password" placeholder="Confirm password"
-    input type="submit" value="Create new user"
-a href="/login" Back
-- err = failure()
-- if err
-    p.error = err
+.login-box
+    form action="/new_user" method="post"
+        .form-box
+            input type="text" name="name" placeholder="Username"
+            input type="password" name="password" placeholder="Password"
+            input type="password" name="confirmed_password" placeholder="Confirm password"
+            input type="submit" value="Create new user"
+    a href="/login" Back
+    - err = failure()
+    - if err
+        p.error = err
