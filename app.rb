@@ -8,12 +8,14 @@ class App < Sinatra::Base
 		return db
 	end
 
+	# Get the last error stored in `session[:failure]`
 	def failure
 		error = session[:failure]
 		session[:failure] = nil
 		return error
 	end
 
+	# Go through a list of posts and add a list to each that contains every user who liked the post.
 	def get_likes(posts)
 		db = db()
 		posts.each do |post|
@@ -33,6 +35,7 @@ class App < Sinatra::Base
 		return users
 	end
 
+	# Returns if a user liked a specific post
 	def liked(user_id, post_id)
 		existing = db().execute("SELECT * FROM user_likes_post WHERE user_id=? AND post_id=?", [user_id, post_id])
 		!existing.empty?
@@ -41,14 +44,6 @@ class App < Sinatra::Base
 	def following(following, followed)
 		existing = db().execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following, followed])
 		!existing.empty?
-	end
-
-	def get_posts_of_following(user_id)
-		posts = db().execute("SELECT * from posts WHERE author_id IN (
-			SELECT followed_id FROM user_follows_user WHERE following_id=?
-		) ORDER BY created DESC", user_id)
-		posts = get_likes(posts)
-		return posts
 	end
 
 	get '/following' do
@@ -97,7 +92,12 @@ class App < Sinatra::Base
 
 	get '/' do
 		if session[:user_id]
-			posts = get_posts_of_following(session[:user_id])
+			# Get all posts from the users `user_id` follow, sorted by when the posts were created.
+			posts = db().execute("SELECT * from posts WHERE author_id IN (
+				SELECT followed_id FROM user_follows_user WHERE following_id=?
+			) ORDER BY created DESC", session[:user_id])
+
+			posts = get_likes(posts)
 			slim(:home_page, locals: {posts: posts})
 		else
 			redirect('/login')
@@ -201,9 +201,8 @@ class App < Sinatra::Base
 	post '/follow_user/:user_id' do
 		following_id = session[:user_id]
 		followed_id = params[:user_id]
-		db = db()
-		existing = db.execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])
-		if existing.empty?
+		if !following(following_id, followed_id)
+			db = db()
 			db.execute("INSERT INTO user_follows_user (following_id, followed_id) VALUES (?, ?)", [following_id, followed_id])
 		end
 		redirect back
@@ -212,9 +211,8 @@ class App < Sinatra::Base
 	post '/unfollow_user/:user_id' do
 		following_id = session[:user_id]
 		followed_id = params[:user_id]
-		db = db()
-		existing = db.execute("SELECT * FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])
-		if !existing.empty?
+		if following(following_id, followed_id)
+			db = db()
 			db.execute("DELETE FROM user_follows_user WHERE following_id=? AND followed_id=?", [following_id, followed_id])
 		end
 		redirect back

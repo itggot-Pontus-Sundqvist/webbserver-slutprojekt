@@ -127,6 +127,11 @@ input[type=text] {
     padding: 3px;
 }
 
+
+input[type=password] {
+    padding: 3px;
+}
+
 .new-post {
     padding: 5px;
     background-color: purple;
