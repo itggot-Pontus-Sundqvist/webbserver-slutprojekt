@@ -104,7 +104,33 @@ main {
     height: 200px;
 }
 
+.center-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .error {
     background: blue;
     color: white;
+}
+
+input[type=submit] {
+    border: black 1px solid;
+    margin: 2px;
+    border-radius: 4px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+input[type=text] {
+    padding: 3px;
+}
+
+.new-post {
+    padding: 5px;
+    background-color: purple;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }

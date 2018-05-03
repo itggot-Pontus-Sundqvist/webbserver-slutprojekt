@@ -43,6 +43,14 @@ class App < Sinatra::Base
 		!existing.empty?
 	end
 
+	def get_posts_of_following(user_id)
+		posts = db().execute("SELECT * from posts WHERE author_id IN (
+			SELECT followed_id FROM user_follows_user WHERE following_id=?
+		) ORDER BY created DESC", user_id)
+		posts = get_likes(posts)
+		return posts
+	end
+
 	get '/following' do
 		if session[:user_id]
 			users = get_following(session[:user_id])
@@ -85,14 +93,6 @@ class App < Sinatra::Base
 		else
 			"User not found"
 		end
-	end
-	
-	def get_posts_of_following(user_id)
-		posts = db().execute("SELECT * from posts WHERE author_id IN (
-			SELECT followed_id FROM user_follows_user WHERE following_id=?
-		) ORDER BY created DESC", user_id)
-		posts = get_likes(posts)
-		return posts
 	end
 
 	get '/' do
@@ -177,7 +177,6 @@ class App < Sinatra::Base
 		author = db.execute("SELECT author_id FROM posts WHERE id=?", post_id)
 		if !author.empty? && session[:user_id] == author[0]['author_id']
 			db.execute("DELETE FROM posts WHERE id=?", post_id)
-			p "DELETED"
 		end
 		redirect "page/#{params[:name]}##{post_id}"
 	end

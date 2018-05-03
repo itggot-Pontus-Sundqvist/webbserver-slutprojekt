@@ -1,6 +1,7 @@
-form action="/new_post" method="post"
-    input type="text" name="text" placeholder="Write a new post here!"
-    input type="submit" value="Post"
+.new-post
+    form action="/new_post" method="post"
+        input type="text" name="text" placeholder="Write a new post here!"
+        input type="submit" value="Post"
 
 - posts.each do |post|
     .post_box id="#{post["id"]}"
