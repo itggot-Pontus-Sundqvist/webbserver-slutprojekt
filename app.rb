@@ -61,7 +61,7 @@ class App < Sinatra::Base
 
 	post '/new_post' do
 		if session[:user_id]
-			db().execute("INSERT INTO posts (content, created, author_id) VALUES (?, ?, ?)", [params[:text], Time.now.to_i, session[:user_id]])
+			create_post(params[:text], session[:user_id])
 			redirect('/')
 		else
 			redirect('/login')
@@ -109,7 +109,6 @@ class App < Sinatra::Base
 	post '/like_post/:post_id/:place' do
 		liking_user_id = session[:user_id]
 		post_id = params[:post_id]
-		db = db()
 		if !liked(liking_user_id, post_id)
 			add_like(liking_user_id, post_id)
 		end
@@ -125,7 +124,6 @@ class App < Sinatra::Base
 	post '/unlike_post/:post_id/:place' do
 		liking_user_id = session[:user_id]
 		post_id = params[:post_id]
-		db = db()
 		if liked(liking_user_id, post_id)
 			remove_like(liking_user_id, post_id)
 		end
@@ -142,9 +140,8 @@ class App < Sinatra::Base
 
 	post '/delete_post/:post_id/:name' do
 		post_id = params[:post_id]
-		db = db()
 		if is_author(session[:user_id], post_id)
-			db().execute("DELETE FROM posts WHERE id=?", post_id)
+			remove_post(post_id)
 		end
 		redirect "page/#{params[:name]}##{post_id}"
 	end
